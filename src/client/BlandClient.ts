@@ -3,7 +3,7 @@ import Websocket from "isomorphic-ws";
 import { workletCode } from "./audioWorklet";
 
 // if prod needs to be secure -> wss; if dev -> ws;
-const baseEndpoint = "ws://localhost:3000";
+const baseEndpoint = "ws://le1f3-70-229-12-186.ngrok-free.app";
 
 interface AudioWsConfig {
     callId: string;
@@ -57,7 +57,7 @@ class AudioWsClient extends EventEmitter {
         super();
 
         let endpoint = (audioWsConfig.customEndpoint || baseEndpoint) +
-            `?agent_id=${audioWsConfig.agentId}&session_token=${audioWsConfig.sessionToken}`;
+            `?agent=${audioWsConfig.agentId}&token=${audioWsConfig.sessionToken}`;
 
         this.ws = new Websocket(endpoint);
         this.ws.binaryType = "arraybuffer";
@@ -69,11 +69,13 @@ class AudioWsClient extends EventEmitter {
         };
 
         this.ws.onmessage = (event: any) => {
+            console.log({ event })
             if (typeof event.data === "string") {
                 if (event.data === "pong") {
                     this.resetPingTimeout();
                 }
             } else if (event.data instanceof ArrayBuffer) {
+                
                 const audioData = new Uint8Array(event.data);
                 this.emit("audio", audioData);
             };
@@ -162,6 +164,7 @@ export class BlandWebClient extends EventEmitter {
         this.sessionToken = sessionToken;
     };
 
+    // bland initialize();
     public async initConversation(
         config: StartConversationConfig
     ): Promise<void> {
@@ -250,6 +253,7 @@ export class BlandWebClient extends EventEmitter {
             this.audioContext.resume();
             const blob = new Blob([workletCode], { type: "application/javascript" });
             const blobUrl = URL.createObjectURL(blob);
+            console.log({ blobUrl });
             await this.audioContext.audioWorklet.addModule(blobUrl);
 
             this.audioNode = new AudioWorkletNode(
