@@ -67,7 +67,7 @@ class AudioWsClient extends EventEmitter {
             this.startPingPong();
         };
 
-        this.ws.onmessage = (event:any) => {
+        this.ws.onmessage = (event: any) => {
             if (typeof event.data === "string") {
                 if (event.data === "pong") {
                     this.resetPingTimeout();
@@ -78,11 +78,11 @@ class AudioWsClient extends EventEmitter {
             };
         };
 
-        this.ws.onclose = (event:any) => {
+        this.ws.onclose = (event: any) => {
             this.emit("close", event);
         };
 
-        this.ws.onerror = (event:any) => {
+        this.ws.onerror = (event: any) => {
             this.emit("error", event);
         };
     };
@@ -153,7 +153,7 @@ export class BlandWebClient extends EventEmitter {
     private agentId: string | null;
     private sessionToken: string | null;
 
-    constructor(agentId:string, sessionToken:string, customEndpoint?: string) {
+    constructor(agentId: string, sessionToken: string, customEndpoint?: string) {
         super();
 
         if (customEndpoint) this.customEndpoint = customEndpoint;
@@ -183,6 +183,31 @@ export class BlandWebClient extends EventEmitter {
         };
     };
 
+    public stopConversation(): void {
+        this.isCalling = false;
+        this.liveClient?.close();
+        this.audioContext?.suspend();
+        this.audioContext?.close(); // Properly close the audio context to release system audio resources
+
+        if (this.isAudioWorkletSupported()) {
+            this.audioNode?.disconnect();
+            this.audioNode = null; // Prevent memory leak by detaching the event handler
+        } else {
+            if (this.captureNode) {
+                this.captureNode.disconnect();
+                this.captureNode.onaudioprocess = null; // Prevent memory leak by detaching the event handler
+                this.captureNode = null;
+                this.audioData = [];
+                this.audioDataIndex = 0;
+            }
+        }
+        // Release references to allow for garbage collection
+        this.liveClient = null;
+        this.stream?.getTracks().forEach((track) => track.stop());
+        this.audioContext = null;
+        this.stream = null;
+    };
+
     private async setupAudioPlayback(
         sampleRate: number,
         customStream?: MediaStream
@@ -206,6 +231,9 @@ export class BlandWebClient extends EventEmitter {
                 agentId: this.agentId,
                 sessionToken: this.sessionToken
             });
+
+            this.handleAudioEvents();
+            this.isCalling = true;
         } catch (error) {
             throw new Error("User rejected microphone access");
         };
@@ -217,7 +245,7 @@ export class BlandWebClient extends EventEmitter {
             });
 
             this.audioContext.resume();
-            const blob = new Blob([workletCode], {type: "application/javascript"});
+            const blob = new Blob([workletCode], { type: "application/javascript" });
             const blobUrl = URL.createObjectURL(blob);
             await this.audioContext.audioWorklet.addModule(blobUrl);
 
@@ -225,7 +253,7 @@ export class BlandWebClient extends EventEmitter {
                 this.audioContext,
                 "capture-and-playback-processor"
             );
-            
+
             console.log({
                 type: "log",
                 message: "Audio Worklet Loaded & Setup"
@@ -263,7 +291,7 @@ export class BlandWebClient extends EventEmitter {
                     const pcmFloat32Data = AudioProcessingEvent.inputBuffer.getChannelData(0);
                     const pcmData = convertFloat32ToUint8(pcmFloat32Data);
                     this.liveClient.send(pcmData);
-                    console.log({pcmData});
+                    console.log({ pcmData });
 
                     const outputBuffer = AudioProcessingEvent.outputBuffer;
                     const outputChannel = outputBuffer.getChannelData(0);
@@ -293,9 +321,74 @@ export class BlandWebClient extends EventEmitter {
         };
     };
 
+    private handleAudioEvents(): void {
+        // Exposed
+        this.liveClient.on("open", () => {
+            this.emit("conversationStarted");
+        });
+
+        this.liveClient.on("audio", (audio: Uint8Array) => {
+            this.playAudio(audio);
+        });
+
+        this.liveClient.on("disconnect", () => {
+            this.emit("disconnect");
+        });
+
+        this.liveClient.on("reconnect", () => {
+            this.emit("reconnect");
+        });
+
+        this.liveClient.on("error", (error) => {
+            this.emit("error", error);
+            if (this.isCalling) {
+                this.stopConversation();
+            }
+        });
+
+        this.liveClient.on("close", (code: number, reason: string) => {
+            if (this.isCalling) {
+                this.stopConversation();
+            }
+            this.emit("conversationEnded", { code, reason });
+        });
+
+        this.liveClient.on("update", (update) => {
+            this.emit("update", update);
+        });
+
+        // Not exposed
+
+        this.liveClient.on("clear", () => {
+            if (this.isAudioWorkletSupported()) {
+                this.audioNode.port.postMessage("clear");
+            } else {
+                this.audioData = [];
+                this.audioDataIndex = 0;
+                if (this.isTalking) {
+                    this.isTalking = false;
+                    this.emit("agentStopTalking");
+                }
+            }
+        });
+    }
+
     private isAudioWorkletSupported(): boolean {
         return (
             /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor)
         );
+    };
+
+    private playAudio(audio: Uint8Array): void {
+        if (this.isAudioWorkletSupported()) {
+            this.audioNode.port.postMessage(audio);
+        } else {
+            const float32Data = convertUint8ToFloat32(audio);
+            this.audioData.push(float32Data);
+            if (!this.isTalking) {
+                this.isTalking = true;
+                this.emit("agentStartTalking");
+            }
+        }
     }
 };
