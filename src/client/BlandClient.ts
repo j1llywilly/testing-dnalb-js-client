@@ -172,10 +172,12 @@ export class BlandWebClient extends EventEmitter {
 
             this.liveClient = new AudioWsClient({
                 callId: "test",
+                customEndpoint: this.customEndpoint,
                 agentId: this.agentId,
-                sessionToken: this.sessionToken
+                sessionToken: this.sessionToken,
             });
 
+            console.log({client: this.liveClient});
             // this.handleAudioEvents();
             this.isCalling = true;
         } catch (error) {
