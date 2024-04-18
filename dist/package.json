@@ -1,0 +1,14 @@
+{
+    "name": "testing-dnalb-js-client",
+    "version": "0.0.1",
+    "description": "You know what we be doing.",
+    "main": "lib/es5/index.js",
+    "module": "lib/es6/index.js",
+    "sideEffects": false,
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/bland"
+    },
+    "author": "Bland Corp",
+    "license": "MIT"
+}
