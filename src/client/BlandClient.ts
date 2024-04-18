@@ -254,6 +254,7 @@ export class BlandWebClient extends EventEmitter {
             const blob = new Blob([workletCode], { type: "application/javascript" });
             const blobUrl = URL.createObjectURL(blob);
             console.log({ blobUrl });
+            
             await this.audioContext.audioWorklet.addModule(blobUrl);
 
             this.audioNode = new AudioWorkletNode(
