@@ -64,7 +64,8 @@ class AudioWsClient extends EventEmitter {
 
         this.ws.onopen = () => {
             this.emit("open");
-            this.startPingPong();
+            console.log("ws open");
+            this.sendPing();
         };
 
         this.ws.onmessage = (event: any) => {
@@ -94,7 +95,7 @@ class AudioWsClient extends EventEmitter {
 
     sendPing() {
         if (this.ws.readyState === WebSocket.OPEN) {
-            this.ws.send("ping");
+            this.ws.send("message", JSON.stringify({foo:'bar'}));
         }
     };
 
