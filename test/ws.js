@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         );
         await sdk.initConversation({
             callId: "test",
-            sampleRate: 48000,
+            sampleRate: 44100,
         });
     });
 });

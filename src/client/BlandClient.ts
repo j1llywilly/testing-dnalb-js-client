@@ -70,26 +70,25 @@ class AudioWsClient extends EventEmitter {
         };
 
         this.ws.onmessage = (event: any) => {
-            console.log({ event })
+            //console.log({ event })
 
             try {
                 const data = JSON.parse(event.data);
 
-
-                
+                // this will be for handling mark messages
             } catch (error) {
-                console.log({ error });
+                //console.log({ error });
             }
 
             if (typeof event.data === "string" && event.data === "pong") {
                 this.resetPingTimeout();
             } else if (event.data instanceof ArrayBuffer) {
+                console.log(event.data)
                 const audioData = new Uint8Array(event.data);
                 this.emit("audio", audioData);
-            }
-            // } else if (typeof(event.data) === "string") {
-            //     this.emit("audio", event.data);
-            // };
+            } else if (typeof(event.data) === "string") {
+                this.emit("audio", event.data);
+            };
         };
 
         this.ws.onclose = (event: any) => {
@@ -299,8 +298,10 @@ export class BlandWebClient extends EventEmitter {
 
             this.audioNode.port.onmessage = (event) => {
                 let data = event.data;
-                //console.log({data, foo:"audioNode"})
+                //console.log({data});
                 if (Array.isArray(data)) {
+                    console.log(data)
+                    //this.emit("audio", data[0]);
                     let eventName = data[0];
                     if (eventName === "capture") {
                         //console.log("sending data");
@@ -317,9 +318,13 @@ export class BlandWebClient extends EventEmitter {
                 };
             };
 
+            console.log("321")
             const source = this.audioContext.createMediaStreamSource(this.stream);
+            console.log(source)
             source.connect(this.audioNode);
+            console.log({ audioNode: this.audioNode, context: this.audioContext });
             this.audioNode.connect(this.audioContext.destination);
+            console.log(this.audioContext.destination)
         } else {
             const source = this.audioContext.createMediaStreamSource(this.stream);
             this.captureNode = this.audioContext.createScriptProcessor(2048, 1, 1);
@@ -338,6 +343,8 @@ export class BlandWebClient extends EventEmitter {
                         const pcmSample = Math.max(-1, Math.min(1, pcmFloat32Data[i]));
                         outputData[i] = pcmSample * compression;
                     };
+
+                    //console.log(p)
                     
                     //const base64Audio = btoa(String.fromCharCode.apply(null, new Uint8Array(outputData.buffer)));
                     //console.log({ base64Audio });

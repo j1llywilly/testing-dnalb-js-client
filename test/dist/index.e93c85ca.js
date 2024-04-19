@@ -592,7 +592,7 @@ document.addEventListener("DOMContentLoaded", async ()=>{
         const sdk = new (0, _indexJs.BlandWebClient)("46f37229-7d12-44be-b343-6e68274cfbea", "bb26f357-660a-462e-8bac-49fc30a578fb");
         await sdk.initConversation({
             callId: "test",
-            sampleRate: 48000
+            sampleRate: 44100
         });
     });
 });
@@ -803,11 +803,16 @@ var AudioWsClient = /** @class */ function(_super) {
             _this.emit("open");
         };
         _this.ws.onmessage = function(event) {
-            console.log({
-                event: event
-            });
+            //console.log({ event })
+            try {
+                var data = JSON.parse(event.data);
+            // this will be for handling mark messages
+            } catch (error) {
+            //console.log({ error });
+            }
             if (typeof event.data === "string" && event.data === "pong") _this.resetPingTimeout();
             else if (event.data instanceof ArrayBuffer) {
+                console.log(event.data);
                 var audioData = new Uint8Array(event.data);
                 _this.emit("audio", audioData);
             } else if (typeof event.data === "string") _this.emit("audio", event.data);
@@ -1052,8 +1057,10 @@ var BlandWebClient = /** @class */ function(_super) {
                         this.audioNode.port.onmessage = function(event) {
                             var _a;
                             var data = event.data;
-                            //console.log({data, foo:"audioNode"})
+                            //console.log({data});
                             if (Array.isArray(data)) {
+                                console.log(data);
+                                //this.emit("audio", data[0]);
                                 var eventName = data[0];
                                 if (eventName === "capture") //console.log("sending data");
                                 (_a = _this.liveClient) === null || _a === void 0 || _a.send(data[1]);
@@ -1063,9 +1070,16 @@ var BlandWebClient = /** @class */ function(_super) {
                                 else if (data === "agent_start_talking") _this.emit("agentStartTalking");
                             }
                         };
+                        console.log("321");
                         source = this.audioContext.createMediaStreamSource(this.stream);
+                        console.log(source);
                         source.connect(this.audioNode);
+                        console.log({
+                            audioNode: this.audioNode,
+                            context: this.audioContext
+                        });
                         this.audioNode.connect(this.audioContext.destination);
+                        console.log(this.audioContext.destination);
                         return [
                             3 /*break*/ ,
                             8
