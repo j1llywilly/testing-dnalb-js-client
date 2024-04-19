@@ -288,11 +288,11 @@ export class BlandWebClient extends EventEmitter {
 
             this.audioNode.port.onmessage = (event) => {
                 let data = event.data;
-                console.log({data, foo:"audioNode"})
+                //console.log({data, foo:"audioNode"})
                 if (Array.isArray(data)) {
                     let eventName = data[0];
                     if (eventName === "capture") {
-                        console.log("sending data");
+                        //console.log("sending data");
                         this.liveClient?.send(data[1]);
                     } else if (eventName === "playback") {
                         this.emit("audio", data[1]);
