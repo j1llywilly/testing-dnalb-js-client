@@ -71,14 +71,25 @@ class AudioWsClient extends EventEmitter {
 
         this.ws.onmessage = (event: any) => {
             console.log({ event })
+
+            try {
+                const data = JSON.parse(event.data);
+
+
+                
+            } catch (error) {
+                console.log({ error });
+            }
+
             if (typeof event.data === "string" && event.data === "pong") {
                 this.resetPingTimeout();
             } else if (event.data instanceof ArrayBuffer) {
                 const audioData = new Uint8Array(event.data);
                 this.emit("audio", audioData);
-            } else if (typeof(event.data) === "string") {
-                this.emit("audio", event.data);
-            };
+            }
+            // } else if (typeof(event.data) === "string") {
+            //     this.emit("audio", event.data);
+            // };
         };
 
         this.ws.onclose = (event: any) => {
