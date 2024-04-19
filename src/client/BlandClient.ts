@@ -300,7 +300,7 @@ export class BlandWebClient extends EventEmitter {
                 let data = event.data;
                 //console.log({data});
                 if (Array.isArray(data)) {
-                    console.log(data)
+                    //console.log(data)
                     //this.emit("audio", data[0]);
                     let eventName = data[0];
                     if (eventName === "capture") {
@@ -310,6 +310,13 @@ export class BlandWebClient extends EventEmitter {
                         this.emit("audio", data[1]);
                     };
                 } else {
+
+                    console.log({ data })
+
+                    if (data === "clear") {
+                        this.audioData = [];
+                    }
+
                     if (data === "agent_stop_talking") {
                         this.emit("agentStopTalking");
                     } else if (data === "agent_start_talking") {
