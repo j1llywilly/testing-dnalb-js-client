@@ -3,7 +3,7 @@ import Websocket from "isomorphic-ws";
 import { workletCode } from "./audioWorklet";
 
 // if prod needs to be secure -> wss; if dev -> ws;
-const baseEndpoint = "wss://4199-66-207-31-200.ngrok-free.app";
+const baseEndpoint = "ws://localhost:3000";
 
 interface AudioWsConfig {
     callId: string;
@@ -52,13 +52,14 @@ class AudioWsClient extends EventEmitter {
     private pingInterval: ReturnType<typeof setInterval> | null = null;
     private wasDisconnected: boolean = false;
     private pingIntervalTime: number = 5000;
+    private audioIndex: number = 0;
 
     constructor(audioWsConfig: AudioWsConfig) {
         super();
 
         console.log({ baseEndpoint })
 
-        let endpoint = baseEndpoint + `/?agent=${audioWsConfig.agentId}&token=${audioWsConfig.sessionToken}`;
+        let endpoint = baseEndpoint + `?agent=${audioWsConfig.agentId}&token=${audioWsConfig.sessionToken}`;
         console.log({ endpoint });
 
         this.ws = new Websocket(endpoint);
@@ -69,14 +70,14 @@ class AudioWsClient extends EventEmitter {
         };
 
         this.ws.onmessage = (event: any) => {
-            if (typeof event.data === "string") {
-                if (event.data === "pong") {
-                    this.resetPingTimeout();
-                }
+            console.log({ event })
+            if (typeof event.data === "string" && event.data === "pong") {
+                this.resetPingTimeout();
             } else if (event.data instanceof ArrayBuffer) {
-                
                 const audioData = new Uint8Array(event.data);
                 this.emit("audio", audioData);
+            } else if (typeof(event.data) === "string") {
+                this.emit("audio", event.data);
             };
         };
 
@@ -124,6 +125,23 @@ class AudioWsClient extends EventEmitter {
             this.startPingPong();
         }
     };
+
+    // sendBase64(audio: string) {
+    //     if (this.ws.readyState === 1) {
+    //         this.audioIndex++;
+    //         this.ws.send({
+    //             type: 'utf8',
+    //             utf8Data: JSON.stringify({
+    //                 event: "media",
+    //                 sequenceNumber: this.audioIndex,
+    //                 media: {
+    //                     track: "outbound",
+    //                     payload: audio
+    //                 }
+    //             })
+    //         });
+    //     };
+    // };
 
     send(audio: Uint8Array) {
         if (this.ws.readyState === 1) {
@@ -270,10 +288,11 @@ export class BlandWebClient extends EventEmitter {
 
             this.audioNode.port.onmessage = (event) => {
                 let data = event.data;
-
+                console.log({data, foo:"audioNode"})
                 if (Array.isArray(data)) {
                     let eventName = data[0];
                     if (eventName === "capture") {
+                        console.log("sending data");
                         this.liveClient?.send(data[1]);
                     } else if (eventName === "playback") {
                         this.emit("audio", data[1]);
@@ -299,6 +318,20 @@ export class BlandWebClient extends EventEmitter {
                 if (this.isCalling) {
                     const pcmFloat32Data = AudioProcessingEvent.inputBuffer.getChannelData(0);
                     const pcmData = convertFloat32ToUint8(pcmFloat32Data);
+                    
+                    const bufferLength = pcmFloat32Data.length;
+                    const outputData = new Int16Array(bufferLength);
+
+                    for (let i = 0; i < bufferLength; i++) {
+                        const compression = 32767;
+                        const pcmSample = Math.max(-1, Math.min(1, pcmFloat32Data[i]));
+                        outputData[i] = pcmSample * compression;
+                    };
+                    
+                    //const base64Audio = btoa(String.fromCharCode.apply(null, new Uint8Array(outputData.buffer)));
+                    //console.log({ base64Audio });
+                    //this.liveClient.sendBase64(base64Audio);
+
                     this.liveClient.send(pcmData);
                     console.log({ pcmData });
 

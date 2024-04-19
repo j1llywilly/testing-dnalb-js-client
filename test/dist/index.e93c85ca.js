@@ -597,7 +597,7 @@ document.addEventListener("DOMContentLoaded", async ()=>{
     });
 });
 
-},{"../dist/lib/es5/index.js":"gzSGJ"}],"gzSGJ":[function(require,module,exports) {
+},{"../dist/lib/es5/index.js":"2wG3U"}],"2wG3U":[function(require,module,exports) {
 "use strict";
 Object.defineProperty(exports, "__esModule", {
     value: true
@@ -611,7 +611,7 @@ Object.defineProperty(exports, "BlandWebClient", {
     }
 });
 
-},{"f2e95d1bf8cc31d0":"iqWSH"}],"iqWSH":[function(require,module,exports) {
+},{"f2e95d1bf8cc31d0":"aBY79"}],"aBY79":[function(require,module,exports) {
 "use strict";
 var __extends = this && this.__extends || function() {
     var extendStatics = function(d, b) {
@@ -763,7 +763,7 @@ var eventemitter3_1 = require("cc804616da9a4908");
 var isomorphic_ws_1 = require("58aa156552e0aa08");
 var audioWorklet_1 = require("42dcabe6bf549f2d");
 // if prod needs to be secure -> wss; if dev -> ws;
-var baseEndpoint = "wss://4199-66-207-31-200.ngrok-free.app";
+var baseEndpoint = "ws://localhost:3000";
 function convertUint8ToFloat32(array) {
     var targetArray = new Float32Array(array.byteLength / 2);
     // A DataView is used to read our 16-bit little-endian samples out of the Uint8Array buffer
@@ -789,10 +789,11 @@ var AudioWsClient = /** @class */ function(_super) {
         _this.pingInterval = null;
         _this.wasDisconnected = false;
         _this.pingIntervalTime = 5000;
+        _this.audioIndex = 0;
         console.log({
             baseEndpoint: baseEndpoint
         });
-        var endpoint = baseEndpoint + "/?agent=".concat(audioWsConfig.agentId, "&token=").concat(audioWsConfig.sessionToken);
+        var endpoint = baseEndpoint + "?agent=".concat(audioWsConfig.agentId, "&token=").concat(audioWsConfig.sessionToken);
         console.log({
             endpoint: endpoint
         });
@@ -802,12 +803,14 @@ var AudioWsClient = /** @class */ function(_super) {
             _this.emit("open");
         };
         _this.ws.onmessage = function(event) {
-            if (typeof event.data === "string") {
-                if (event.data === "pong") _this.resetPingTimeout();
-            } else if (event.data instanceof ArrayBuffer) {
+            console.log({
+                event: event
+            });
+            if (typeof event.data === "string" && event.data === "pong") _this.resetPingTimeout();
+            else if (event.data instanceof ArrayBuffer) {
                 var audioData = new Uint8Array(event.data);
                 _this.emit("audio", audioData);
-            }
+            } else if (typeof event.data === "string") _this.emit("audio", event.data);
         };
         _this.ws.onclose = function(event) {
             _this.emit("close", event);
@@ -847,6 +850,22 @@ var AudioWsClient = /** @class */ function(_super) {
             this.startPingPong();
         }
     };
+    // sendBase64(audio: string) {
+    //     if (this.ws.readyState === 1) {
+    //         this.audioIndex++;
+    //         this.ws.send({
+    //             type: 'utf8',
+    //             utf8Data: JSON.stringify({
+    //                 event: "media",
+    //                 sequenceNumber: this.audioIndex,
+    //                 media: {
+    //                     track: "outbound",
+    //                     payload: audio
+    //                 }
+    //             })
+    //         });
+    //     };
+    // };
     AudioWsClient.prototype.send = function(audio) {
         if (this.ws.readyState === 1) this.ws.send(audio);
     };
@@ -1033,10 +1052,16 @@ var BlandWebClient = /** @class */ function(_super) {
                         this.audioNode.port.onmessage = function(event) {
                             var _a;
                             var data = event.data;
+                            console.log({
+                                data: data,
+                                foo: "audioNode"
+                            });
                             if (Array.isArray(data)) {
                                 var eventName = data[0];
-                                if (eventName === "capture") (_a = _this.liveClient) === null || _a === void 0 || _a.send(data[1]);
-                                else if (eventName === "playback") _this.emit("audio", data[1]);
+                                if (eventName === "capture") {
+                                    console.log("sending data");
+                                    (_a = _this.liveClient) === null || _a === void 0 || _a.send(data[1]);
+                                } else if (eventName === "playback") _this.emit("audio", data[1]);
                             } else {
                                 if (data === "agent_stop_talking") _this.emit("agentStopTalking");
                                 else if (data === "agent_start_talking") _this.emit("agentStartTalking");
@@ -1056,6 +1081,16 @@ var BlandWebClient = /** @class */ function(_super) {
                             if (_this.isCalling) {
                                 var pcmFloat32Data = AudioProcessingEvent.inputBuffer.getChannelData(0);
                                 var pcmData = convertFloat32ToUint8(pcmFloat32Data);
+                                var bufferLength = pcmFloat32Data.length;
+                                var outputData = new Int16Array(bufferLength);
+                                for(var i = 0; i < bufferLength; i++){
+                                    var compression = 32767;
+                                    var pcmSample = Math.max(-1, Math.min(1, pcmFloat32Data[i]));
+                                    outputData[i] = pcmSample * compression;
+                                }
+                                //const base64Audio = btoa(String.fromCharCode.apply(null, new Uint8Array(outputData.buffer)));
+                                //console.log({ base64Audio });
+                                //this.liveClient.sendBase64(base64Audio);
                                 _this.liveClient.send(pcmData);
                                 console.log({
                                     pcmData: pcmData
@@ -1147,7 +1182,7 @@ var BlandWebClient = /** @class */ function(_super) {
 }(eventemitter3_1.EventEmitter);
 exports.BlandWebClient = BlandWebClient;
 
-},{"cc804616da9a4908":"kzokL","58aa156552e0aa08":"7e0te","42dcabe6bf549f2d":"ev3Vv"}],"kzokL":[function(require,module,exports) {
+},{"cc804616da9a4908":"1BMOb","58aa156552e0aa08":"bBXdW","42dcabe6bf549f2d":"4lGGE"}],"1BMOb":[function(require,module,exports) {
 "use strict";
 var has = Object.prototype.hasOwnProperty, prefix = "~";
 /**
@@ -1402,7 +1437,7 @@ EventEmitter.prefixed = prefix;
 EventEmitter.EventEmitter = EventEmitter;
 module.exports = EventEmitter;
 
-},{}],"7e0te":[function(require,module,exports) {
+},{}],"bBXdW":[function(require,module,exports) {
 // https://github.com/maxogden/websocket-stream/blob/48dc3ddf943e5ada668c31ccd94e9186f02fafbd/ws-fallback.js
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
@@ -1445,7 +1480,7 @@ exports.export = function(dest, destName, get) {
     });
 };
 
-},{}],"ev3Vv":[function(require,module,exports) {
+},{}],"4lGGE":[function(require,module,exports) {
 "use strict";
 Object.defineProperty(exports, "__esModule", {
     value: true
