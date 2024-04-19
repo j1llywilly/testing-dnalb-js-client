@@ -4,7 +4,7 @@
   "author": "Bland corp",
   "license":"MIT",
   "scripts": {
-    "compile": "rm -rf dist/lib && tsc && tsc --build tsconfig.es5.json"
+    "compile": "rm -rf dist/lib && rm -rf test/dist && tsc && tsc --build tsconfig.es5.json --force --watch"
   },
   "dependencies": {
     "eventemitter3": "^5.0.1",

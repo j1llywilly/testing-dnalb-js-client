@@ -3,7 +3,7 @@ import Websocket from "isomorphic-ws";
 import { workletCode } from "./audioWorklet";
 
 // if prod needs to be secure -> wss; if dev -> ws;
-const baseEndpoint = "ws://le1f3-70-229-12-186.ngrok-free.app";
+const baseEndpoint = "wss://4199-66-207-31-200.ngrok-free.app";
 
 interface AudioWsConfig {
     callId: string;
@@ -56,20 +56,19 @@ class AudioWsClient extends EventEmitter {
     constructor(audioWsConfig: AudioWsConfig) {
         super();
 
-        let endpoint = (audioWsConfig.customEndpoint || baseEndpoint) +
-            `?agent=${audioWsConfig.agentId}&token=${audioWsConfig.sessionToken}`;
+        console.log({ baseEndpoint })
+
+        let endpoint = baseEndpoint + `/?agent=${audioWsConfig.agentId}&token=${audioWsConfig.sessionToken}`;
+        console.log({ endpoint });
 
         this.ws = new Websocket(endpoint);
         this.ws.binaryType = "arraybuffer";
 
         this.ws.onopen = () => {
             this.emit("open");
-            console.log("ws open");
-            this.sendPing();
         };
 
         this.ws.onmessage = (event: any) => {
-            console.log({ event })
             if (typeof event.data === "string") {
                 if (event.data === "pong") {
                     this.resetPingTimeout();
@@ -97,7 +96,7 @@ class AudioWsClient extends EventEmitter {
 
     sendPing() {
         if (this.ws.readyState === WebSocket.OPEN) {
-            this.ws.send("message", JSON.stringify({foo:'bar'}));
+            this.ws.send("message", "ping");
         }
     };
 
@@ -174,6 +173,8 @@ export class BlandWebClient extends EventEmitter {
                 config.customStream
             );
 
+            console.log('AUDIO PLAYBACK SETUP');
+
             this.liveClient = new AudioWsClient({
                 callId: "test",
                 customEndpoint: this.customEndpoint,
@@ -182,7 +183,7 @@ export class BlandWebClient extends EventEmitter {
             });
 
             console.log({client: this.liveClient});
-            // this.handleAudioEvents();
+            this.handleAudioEvents();
             this.isCalling = true;
         } catch (error) {
             this.emit("Error", (error as Error).message);
@@ -254,7 +255,7 @@ export class BlandWebClient extends EventEmitter {
             const blob = new Blob([workletCode], { type: "application/javascript" });
             const blobUrl = URL.createObjectURL(blob);
             console.log({ blobUrl });
-            
+
             await this.audioContext.audioWorklet.addModule(blobUrl);
 
             this.audioNode = new AudioWorkletNode(
