@@ -1052,16 +1052,12 @@ var BlandWebClient = /** @class */ function(_super) {
                         this.audioNode.port.onmessage = function(event) {
                             var _a;
                             var data = event.data;
-                            console.log({
-                                data: data,
-                                foo: "audioNode"
-                            });
+                            //console.log({data, foo:"audioNode"})
                             if (Array.isArray(data)) {
                                 var eventName = data[0];
-                                if (eventName === "capture") {
-                                    console.log("sending data");
-                                    (_a = _this.liveClient) === null || _a === void 0 || _a.send(data[1]);
-                                } else if (eventName === "playback") _this.emit("audio", data[1]);
+                                if (eventName === "capture") //console.log("sending data");
+                                (_a = _this.liveClient) === null || _a === void 0 || _a.send(data[1]);
+                                else if (eventName === "playback") _this.emit("audio", data[1]);
                             } else {
                                 if (data === "agent_stop_talking") _this.emit("agentStopTalking");
                                 else if (data === "agent_start_talking") _this.emit("agentStartTalking");
