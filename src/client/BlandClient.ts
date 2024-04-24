@@ -242,6 +242,8 @@ export class BlandWebClient extends EventEmitter {
             this.audioNode.port.onmessage = (event) => {
                 let data = event.data;
                 if (Array.isArray(data)) {
+                    //console.log(data)
+                    //this.emit("audio", data[0]);
                     let eventName = data[0];
                     if (eventName === "capture") {
                         this.liveClient?.send(data[1]);
@@ -249,6 +251,13 @@ export class BlandWebClient extends EventEmitter {
                         this.emit("audio", data[1]);
                     };
                 } else {
+
+                    console.log({ data })
+
+                    if (data === "clear") {
+                        this.audioData = [];
+                    }
+
                     if (data === "agent_stop_talking") {
                         this.emit("agentStopTalking");
                     } else if (data === "agent_start_talking") {

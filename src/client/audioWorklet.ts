@@ -8,6 +8,7 @@ class captureAndPlaybackProcessor extends AudioWorkletProcessor {
       super();
             
       this.port.onmessage = (e) => {
+        console.log({ e })
         if (e.data === "clear") {
           this.audioData = [];
           this.index = 0;
