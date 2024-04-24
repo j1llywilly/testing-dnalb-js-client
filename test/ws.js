@@ -1,4 +1,4 @@
-import { BlandWebClient } from '../dist/lib/es5/index.js';
+import { BlandWebClient } from '../react-test/src/es5/index.js';
 
 // Example usage
 document.addEventListener('DOMContentLoaded', async () => {
